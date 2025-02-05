@@ -1,101 +1,158 @@
-#include <iostream>
 #include <windows.h>
+#include <iostream>
+#include <string>
 
-using namespace std;
-
-string portName = "COM5"; // Specify the correct COM port
-DWORD baudRate = 115200;  // Transmission speed
-
-HANDLE openSerialPort(const string &port)
+void configurePort(HANDLE hSerial, bool read)
 {
-    HANDLE hSerial = CreateFile(port.c_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr, OPEN_EXISTING, 0, nullptr);
-
-    if (hSerial == INVALID_HANDLE_VALUE)
-    {
-        cerr << "Error: Failed to open port " << port << endl;
-        return nullptr;
-    }
-
     DCB dcbSerialParams = {0};
     dcbSerialParams.DCBlength = sizeof(dcbSerialParams);
-
     if (!GetCommState(hSerial, &dcbSerialParams))
     {
-        cerr << "Error: Unable to get port state" << endl;
-        CloseHandle(hSerial);
-        return nullptr;
+        std::cerr << "Com port get status error" << std::endl;
+        return;
     }
-
-    dcbSerialParams.BaudRate = baudRate;
+    dcbSerialParams.BaudRate = read ? CBR_57600 : CBR_115200;
     dcbSerialParams.ByteSize = 8;
     dcbSerialParams.Parity = NOPARITY;
     dcbSerialParams.StopBits = ONESTOPBIT;
-
     if (!SetCommState(hSerial, &dcbSerialParams))
     {
-        cerr << "Error: Unable to configure port" << endl;
-        CloseHandle(hSerial);
-        return nullptr;
+        std::cerr << "Com port set status error" << std::endl;
     }
-
-    return hSerial;
-}
-
-bool sendCommand(HANDLE hSerial, const string &command)
-{
-    DWORD bytesWritten;
-    string fullCommand = command + "\r"; // Add carriage return
-    return WriteFile(hSerial, fullCommand.c_str(), fullCommand.size(), &bytesWritten, nullptr);
-}
-
-string readResponse(HANDLE hSerial)
-{
-    char buffer[256];
-    DWORD bytesRead;
-    string response;
-
-    if (ReadFile(hSerial, buffer, sizeof(buffer), &bytesRead, nullptr) && bytesRead > 0)
-    {
-        response.assign(buffer, bytesRead);
-    }
-
-    return response;
 }
 
 int main()
 {
-    HANDLE hSerial = openSerialPort("\\\\.\\COM5"); // Open port
+    HANDLE hSerialRead = CreateFile("COM3", GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
+    HANDLE hSerialWrite = CreateFile("COM6", GENERIC_WRITE | GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
 
-    if (!hSerial)
+    if (hSerialRead == INVALID_HANDLE_VALUE || hSerialWrite == INVALID_HANDLE_VALUE)
     {
+        std::cerr << "Port opening error" << std::endl;
         return 1;
     }
 
-    string command;
+    configurePort(hSerialRead, true);
+    configurePort(hSerialWrite, false);
+
+    char buffer[1024];
+    DWORD bytesRead, bytesWritten;
+    std::string response;
+
     while (true)
     {
-        cout << "Enter command: ";
-        cin >> command;
-
-        if (command == "Q")
-            break;
-
-        if (sendCommand(hSerial, command))
+        if (ReadFile(hSerialRead, buffer, sizeof(buffer), &bytesRead, NULL) && bytesRead > 0)
         {
-            cout << "Command sent: " << command << endl;
-            Sleep(100); // Wait for response
-            string response = readResponse(hSerial);
-            cout << "Response: " << response << endl;
-        }
-        else
-        {
-            cout << "Error sending command!" << endl;
+            response.assign(buffer, bytesRead);
+            std::cout << "Transmitted" << response << std::endl;
+            WriteFile(hSerialWrite, buffer, bytesRead, &bytesWritten, NULL);
+            std::cout << "Recieved: " << bytesWritten << std::endl;
         }
     }
 
-    CloseHandle(hSerial);
+    CloseHandle(hSerialRead);
+    CloseHandle(hSerialWrite);
     return 0;
 }
+
+// #include <iostream>
+// #include <windows.h>
+
+// using namespace std;
+
+// string portName = "COM3"; // Specify the correct COM port
+// DWORD baudRate = 115200;  // Transmission speed
+
+// HANDLE openSerialPort(const string &port)
+// {
+//     HANDLE hSerial = CreateFile(port.c_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr, OPEN_EXISTING, 0, nullptr);
+
+//     if (hSerial == INVALID_HANDLE_VALUE)
+//     {
+//         cerr << "Error: Failed to open port " << port << endl;
+//         return nullptr;
+//     }
+
+//     DCB dcbSerialParams = {0};
+//     dcbSerialParams.DCBlength = sizeof(dcbSerialParams);
+
+//     if (!GetCommState(hSerial, &dcbSerialParams))
+//     {
+//         cerr << "Error: Unable to get port state" << endl;
+//         CloseHandle(hSerial);
+//         return nullptr;
+//     }
+
+//     dcbSerialParams.BaudRate = baudRate;
+//     dcbSerialParams.ByteSize = 8;
+//     dcbSerialParams.Parity = NOPARITY;
+//     dcbSerialParams.StopBits = ONESTOPBIT;
+
+//     if (!SetCommState(hSerial, &dcbSerialParams))
+//     {
+//         cerr << "Error: Unable to configure port" << endl;
+//         CloseHandle(hSerial);
+//         return nullptr;
+//     }
+
+//     return hSerial;
+// }
+
+// bool sendCommand(HANDLE hSerial, const string &command)
+// {
+//     DWORD bytesWritten;
+//     string fullCommand = command + "\r"; // Add carriage return
+//     return WriteFile(hSerial, fullCommand.c_str(), fullCommand.size(), &bytesWritten, nullptr);
+// }
+
+// string readResponse(HANDLE hSerial)
+// {
+//     char buffer[256];
+//     DWORD bytesRead;
+//     string response;
+
+//     if (ReadFile(hSerial, buffer, sizeof(buffer), &bytesRead, nullptr) && bytesRead > 0)
+//     {
+//         response.assign(buffer, bytesRead);
+//     }
+
+//     return response;
+// }
+
+// int main()
+// {
+//     HANDLE hSerial = openSerialPort("\\\\.\\COM3"); // Open port
+
+//     if (!hSerial)
+//     {
+//         return 1;
+//     }
+
+//     string command;
+//     while (true)
+//     {
+//         cout << "Enter command: ";
+//         cin >> command;
+
+//         if (command == "Q")
+//             break;
+
+//         if (sendCommand(hSerial, command))
+//         {
+//             cout << "Command sent: " << command << endl;
+//             Sleep(100); // Wait for response
+//             string response = readResponse(hSerial);
+//             cout << "Response: " << response << endl;
+//         }
+//         else
+//         {
+//             cout << "Error sending command!" << endl;
+//         }
+//     }
+
+//     CloseHandle(hSerial);
+//     return 0;
+// }
 
 // #include <windows.h>
 // #include <iostream>
