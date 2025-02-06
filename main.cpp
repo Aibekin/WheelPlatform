@@ -1,25 +1,7 @@
 #include <windows.h>
 #include <iostream>
 #include <string>
-
-void configurePort(HANDLE hSerial, bool read)
-{
-    DCB dcbSerialParams = {0};
-    dcbSerialParams.DCBlength = sizeof(dcbSerialParams);
-    if (!GetCommState(hSerial, &dcbSerialParams))
-    {
-        std::cerr << "Com port get status error" << std::endl;
-        return;
-    }
-    dcbSerialParams.BaudRate = read ? CBR_57600 : CBR_115200;
-    dcbSerialParams.ByteSize = 8;
-    dcbSerialParams.Parity = NOPARITY;
-    dcbSerialParams.StopBits = ONESTOPBIT;
-    if (!SetCommState(hSerial, &dcbSerialParams))
-    {
-        std::cerr << "Com port set status error" << std::endl;
-    }
-}
+#include "src/ComPort.h"
 
 int main()
 {
@@ -32,8 +14,8 @@ int main()
         return 1;
     }
 
-    configurePort(hSerialRead, true);
-    configurePort(hSerialWrite, false);
+    ComPort com1(hSerialRead, true);
+    ComPort com2(hSerialWrite, true);
 
     char buffer[1024];
     DWORD bytesRead, bytesWritten;
