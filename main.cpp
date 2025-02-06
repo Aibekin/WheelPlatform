@@ -5,17 +5,14 @@
 
 int main()
 {
-    HANDLE hSerialRead = CreateFile("COM3", GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
-    HANDLE hSerialWrite = CreateFile("COM6", GENERIC_WRITE | GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
+    LPCSTR port1 = "COM3";
+    LPCSTR port2 = "COM6";
 
-    if (hSerialRead == INVALID_HANDLE_VALUE || hSerialWrite == INVALID_HANDLE_VALUE)
-    {
-        std::cerr << "Port opening error" << std::endl;
-        return 1;
-    }
+    ComPort com1(port1, true);
+    ComPort com2(port2, false);
 
-    ComPort com1(hSerialRead, true);
-    ComPort com2(hSerialWrite, true);
+    HANDLE hSerialRead = com1.returnSerial();
+    HANDLE hSerialWrite = com2.returnSerial();
 
     char buffer[1024];
     DWORD bytesRead, bytesWritten;
@@ -36,6 +33,15 @@ int main()
     CloseHandle(hSerialWrite);
     return 0;
 }
+
+// HANDLE hSerialRead = CreateFile("COM3", GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
+// HANDLE hSerialWrite = CreateFile("COM6", GENERIC_WRITE | GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
+
+// if (hSerialRead == INVALID_HANDLE_VALUE || hSerialWrite == INVALID_HANDLE_VALUE)
+// {
+//     std::cerr << "Port opening error" << std::endl;
+//     return 1;
+// }
 
 // #include <iostream>
 // #include <windows.h>

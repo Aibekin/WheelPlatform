@@ -11,9 +11,13 @@ private:
     bool read;
     HANDLE hSerial;
 
+    void configureComPort(HANDLE &Serial);
+
 public:
-    ComPort(HANDLE Serial, bool r);
+    ComPort(LPCSTR p, bool r);
     ~ComPort();
+
+    HANDLE returnSerial();
 };
 
 #endif
