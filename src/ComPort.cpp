@@ -4,6 +4,7 @@ ComPort::ComPort(LPCSTR port, bool r)
 {
     read = r;
     hSerial = CreateFile(port, read ? GENERIC_READ : (GENERIC_READ | GENERIC_WRITE), 0, NULL, OPEN_EXISTING, 0, NULL);
+    // hSerial = CreateFileA(port, read ? GENERIC_READ : (GENERIC_READ | GENERIC_WRITE), 0, NULL, OPEN_EXISTING, 0, NULL);
 
     if (hSerial == INVALID_HANDLE_VALUE)
         throw "Port opening error";
